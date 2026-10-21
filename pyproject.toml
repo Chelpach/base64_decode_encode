@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opencode-test"
+description = "Small demo CLI: greet and version commands"
+readme = "README.md"
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[project.scripts]
+opencode-test = "opencode_test.cli:console_main"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.hatch.version]
+path = "src/opencode_test/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
