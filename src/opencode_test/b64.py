@@ -4,6 +4,8 @@ standalone/b64dec.py is a byte-identical copy of this file, meant to be
 pasted as text into isolated environments and run as ``python3 b64dec.py``.
 """
 
+from __future__ import annotations
+
 import argparse
 import base64
 import binascii
@@ -27,15 +29,23 @@ _B64_CHARS = frozenset(
 )
 
 
-def normalize_b64(raw: str) -> tuple[str, str | None]:
-    s = "".join(raw.split())
+def _normalize_mapped(raw: str) -> tuple[str, str | None, list[int]]:
+    kept = [(i, ch) for i, ch in enumerate(raw) if not ch.isspace()]
+    posmap = [i for i, _ in kept]
+    s = "".join(ch for _, ch in kept)
     mime = None
     match = _DATA_URL_RE.match(s)
     if match:
         mime = match.group("mime").lower()
+        posmap = posmap[match.start("data") :]
         s = match.group("data")
     s = s.replace("-", "+").replace("_", "/")
     s += "=" * (-len(s) % 4)
+    return s, mime, posmap
+
+
+def normalize_b64(raw: str) -> tuple[str, str | None]:
+    s, mime, _ = _normalize_mapped(raw)
     return s, mime
 
 
@@ -48,13 +58,13 @@ def _first_invalid(s: str) -> tuple[int, str] | None:
 
 
 def decode_b64(raw: str) -> tuple[bytes, str | None]:
-    s, mime = normalize_b64(raw)
+    s, mime, posmap = _normalize_mapped(raw)
     if not s.rstrip("="):
         raise ValueError("empty input")
     bad = _first_invalid(s)
     if bad is not None:
         pos, ch = bad
-        raise ValueError(f"invalid base64 character {ch!r} at position {pos}")
+        raise ValueError(f"invalid base64 character {ch!r} at position {posmap[pos]}")
     try:
         return base64.b64decode(s, validate=True), mime
     except binascii.Error as exc:
@@ -81,12 +91,12 @@ def output_path_for(mime: str | None) -> Path:
     return path
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(prog: str | None = None) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="b64dec",
+        prog=prog,
         description=(
             "Decode base64 (default) or encode with -e. "
-            "Input: DATA argument, else stdin, else --input FILE. "
+            "Input: DATA argument, else --input FILE, else stdin. "
             "Output: text to stdout, binary to decoded.<ext>, or --output FILE "
             "('-' means raw stdout)."
         ),
@@ -167,8 +177,8 @@ def _run_encode(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = build_parser()
+def main(argv: list[str] | None = None, prog: str | None = None) -> int:
+    parser = build_parser(prog)
     args = parser.parse_args(argv)
     if args.data is not None and args.input is not None:
         parser.error("pass either DATA or --input FILE, not both")

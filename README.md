@@ -37,6 +37,7 @@ echo -n 'hi' | opencode-test b64 -e               # aGk=
 
 Вход нормализуется автоматически: пробелы/переносы строк, отсутствующий
 `=`-padding, urlsafe-алфавит, префикс `data:<mime>;base64,`.
+Приоритет входа: аргумент DATA, затем `--input FILE`, затем stdin.
 
 Без `-o`: текст печатается в stdout точными байтами; бинарь записывается
 в файл `decoded.<ext>` (расширение из mime data-URL, иначе `.bin`), путь
@@ -44,7 +45,7 @@ echo -n 'hi' | opencode-test b64 -e               # aGk=
 
 ## Перенос в изолированную среду
 
-`standalone/b64dec.py` — один самодостаточный файл (только stdlib, Python 3.10+).
+`standalone/b64dec.py` — один самодостаточный файл (только stdlib, Python 3.7+).
 Переносится текстом:
 
 ```bash

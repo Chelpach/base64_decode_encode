@@ -30,24 +30,16 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
     if argv and argv[0] == "b64":
-        return b64_main(argv[1:])
+        return b64_main(argv[1:], prog="opencode-test b64")
 
     parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "greet":
         print(f"Hello, {args.name}!")
-        return 0
-
-    if args.command == "version":
+    else:
         print(__version__)
-        return 0
-
-    if args.command == "b64":
-        return b64_main(args.b64_args)
-
-    print(f"unknown command: {args.command}", file=sys.stderr)
-    return 1
+    return 0
 
 
 def console_main() -> None:

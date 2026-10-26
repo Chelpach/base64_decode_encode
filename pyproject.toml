@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opencode-test"
-description = "Small demo CLI: greet and version commands"
+description = "Small demo CLI: greet, version and b64 commands"
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["version"]

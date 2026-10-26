@@ -28,6 +28,12 @@ def test_normalize_unifies_urlsafe_alphabet():
     assert normalize_b64("-/8")[0] == "+/8="
 
 
+def test_annotations_are_postponed():
+    assert normalize_b64.__annotations__
+    assert all(isinstance(v, str) for v in normalize_b64.__annotations__.values())
+    assert all(isinstance(v, str) for v in main.__annotations__.values())
+
+
 def test_normalize_data_url_extracts_mime():
     s, mime = normalize_b64("data:image/png;base64,iVBORw0KGgo=")
     assert mime == "image/png"
@@ -113,6 +119,18 @@ def test_decode_invalid_character(capsys):
     err = capsys.readouterr().err
     assert "invalid base64 character '!'" in err
     assert "position 4" in err
+
+
+def test_decode_invalid_character_position_counts_whitespace(capsys):
+    raw = "aGVs !bG8="
+    assert main([raw]) == 1
+    assert f"position {raw.index('!')}" in capsys.readouterr().err
+
+
+def test_decode_invalid_character_position_matches_raw_input(capsys):
+    raw = "data:text/plain;base64,aGVs!bG8="
+    assert main([raw]) == 1
+    assert f"position {raw.index('!')}" in capsys.readouterr().err
 
 
 def test_decode_empty_input(capsys):
@@ -203,3 +221,10 @@ def test_cli_b64_subcommand(capsysbinary):
 def test_cli_b64_subcommand_with_options(capsys):
     assert cli_main(["b64", "-e", "hi"]) == 0
     assert capsys.readouterr().out == "aGk=\n"
+
+
+def test_cli_b64_help_shows_cli_prog(capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli_main(["b64", "-h"])
+    assert exc.value.code == 0
+    assert "usage: opencode-test b64" in capsys.readouterr().out
