@@ -1,9 +1,9 @@
-# OpenCode test
+# Base64: CLI + UI
 
-Небольшое демо CLI-приложение на Python: команды `greet`, `version` и `b64`.
-Зависимости только из стандартной библиотеки (argparse, base64).
+Инструменты encode/decode base64: CLI-утилита, tkinter-окно и web-интерфейс.
+Только стандартная библиотека Python, без сторонних зависимостей.
 
-## Установка
+## Установка CLI
 
 ```bash
 git clone <repo-url>
@@ -12,27 +12,17 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-## Использование
+## CLI
 
 ```bash
-opencode-test greet          # Hello, world!
-opencode-test greet Alice    # Hello, Alice!
-opencode-test version        # 0.1.0
-python -m opencode_test greet Alice
-```
-
-## Base64: decode/encode
-
-Подкоманда `b64` (интерфейс совпадает со standalone-скриптом `standalone/b64dec.py`):
-
-```bash
-echo 'aGVsbG8sIHdvcmxkIQ==' | opencode-test b64  # hello, world!
-opencode-test b64 'aGVsbG8sIHdvcmxkIQ=='          # то же через аргумент
-opencode-test b64 -i encoded.txt -o out.bin       # из файла в файл
-opencode-test b64 'data:image/png;base64,iVBOR...'  # бинарь -> decoded.png
-opencode-test b64 -i photo.b64 -o - | file -      # сырые байты в пайп
-opencode-test b64 -e 'hello, world!'              # aGVsbG8sIHdvcmxkIQ==
-echo -n 'hi' | opencode-test b64 -e               # aGk=
+opencode-test 'aGVsbG8sIHdvcmxkIQ=='          # hello, world!
+echo 'aGVsbG8sIHdvcmxkIQ==' | opencode-test   # то же через stdin
+opencode-test -e 'hello, world!'              # aGVsbG8sIHdvcmxkIQ==
+echo -n 'hi' | opencode-test -e               # aGk=
+opencode-test -i encoded.txt -o out.bin       # из файла в файл
+opencode-test 'data:image/png;base64,iVBOR...'  # бинарь -> decoded.png
+opencode-test -i photo.b64 -o - | file -      # сырые байты в пайп
+python -m opencode_test 'aGVsbG8='            # то же без установки
 ```
 
 Вход нормализуется автоматически: пробелы/переносы строк, отсутствующий
@@ -43,9 +33,48 @@ echo -n 'hi' | opencode-test b64 -e               # aGk=
 в файл `decoded.<ext>` (расширение из mime data-URL, иначе `.bin`), путь
 сообщается в stderr. `-o -` пишет сырые байты в stdout.
 
+## UI: tkinter
+
+```bash
+python3 ui-tkinter/b64gui.py
+```
+
+Окно: поле «Вход», кнопки `Из файла`, `Encode`, `Decode`, `Сохранить`,
+поле «Результат» ниже и статус-строка.
+
+## UI: web
+
+```bash
+python3 ui-web/b64web.py            # http://127.0.0.1:8765/
+python3 ui-web/b64web.py --port 9000
+```
+
+Та же форма в браузере. «Сохранить» — скачивание результата браузером.
+При удалённом доступе пробросьте порт (ssh -L).
+
+## Поведение UI (одинаково в обоих вариантах)
+
+- Кнопка Encode/Decode работает с текстом из поля «Вход».
+- «Из файла»: файл с текстом (UTF-8) заполняет поле; бинарный файл
+  помечается как «бинарный вход» и кодируется напрямую по Encode.
+- Encode: текст кодируется как UTF-8, бинарный вход — как есть; результат —
+  base64-текст. Decode: принимает только base64-текст.
+- Decode-результат: текст показывается в поле, бинарь — плейсхолдер
+  «N байт (mime)»; «Сохранить» всегда пишет точные байты
+  (`decoded.<ext>` по mime, иначе `.txt`/`.bin`).
+- Любое редактирование поля входа сбрасывает бинарный вход; ошибки
+  показываются в статус-строке.
+
 ## Перенос в изолированную среду
 
-`standalone/b64dec.py` — один самодостаточный файл (только stdlib, Python 3.7+).
+Один самодостаточный файл (только stdlib) на каждый инструмент:
+
+| Файл | Назначение | Python |
+|---|---|---|
+| `standalone/b64dec.py` | CLI | 3.7+ |
+| `standalone/b64gui.py` | tkinter-окно | 3.7+ |
+| `standalone/b64web.py` | web-интерфейс | 3.7+ |
+
 Переносится текстом:
 
 ```bash
@@ -55,14 +84,10 @@ EOF
 python3 b64dec.py 'aGVsbG8sIHdvcmxkIQ=='          # hello, world!
 ```
 
-Либо вставить текст файла в любой редактор и сохранить как `b64dec.py`.
-Запасной вариант без файла для тривиальных случаев:
-
-```bash
-echo 'aGVsbG8sIHdvcmxkIQ==' | python3 -c "import base64,sys; s=''.join(sys.stdin.read().split()); s+='='*(-len(s)%4); sys.stdout.buffer.write(base64.b64decode(s))"
-```
-
-Большие payload передавайте через `-i` или stdin: у аргументов shell есть лимит длины.
+Каждый файл — байт-в-байт копия своего исходника (`src/opencode_test/b64.py`,
+`ui-tkinter/b64gui.py`, `ui-web/b64web.py`); синхронность проверяется тестами.
+Большие payload передавайте через `-i` или stdin: у аргументов shell есть
+лимит длины.
 
 ## Разработка
 

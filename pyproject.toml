@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opencode-test"
-description = "Small demo CLI: greet, version and b64 commands"
+description = "Base64 decode/encode CLI tool"
 readme = "README.md"
 requires-python = ">=3.10"
 dynamic = ["version"]
 
 [project.scripts]
-opencode-test = "opencode_test.cli:console_main"
+opencode-test = "opencode_test.b64:main"
 
 [project.optional-dependencies]
 dev = ["pytest", "ruff"]

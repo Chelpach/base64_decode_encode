@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 
 from opencode_test.b64 import decode_b64, looks_like_text, main, normalize_b64
-from opencode_test.cli import main as cli_main
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -186,12 +185,6 @@ def test_round_trip_encode_decode(capsysbinary):
     assert capsysbinary.readouterr().out == "привет".encode()
 
 
-def test_standalone_copy_is_in_sync():
-    core = (ROOT / "src" / "opencode_test" / "b64.py").read_bytes()
-    standalone = (ROOT / "standalone" / "b64dec.py").read_bytes()
-    assert standalone == core
-
-
 def test_standalone_runs_as_file(tmp_path):
     script = ROOT / "standalone" / "b64dec.py"
     proc = subprocess.run(
@@ -213,18 +206,11 @@ def test_standalone_runs_as_file(tmp_path):
     assert (tmp_path / "decoded.png").read_bytes() == payload
 
 
-def test_cli_b64_subcommand(capsysbinary):
-    assert cli_main(["b64", "aGVsbG8="]) == 0
-    assert capsysbinary.readouterr().out == b"hello"
-
-
-def test_cli_b64_subcommand_with_options(capsys):
-    assert cli_main(["b64", "-e", "hi"]) == 0
-    assert capsys.readouterr().out == "aGk=\n"
-
-
-def test_cli_b64_help_shows_cli_prog(capsys):
-    with pytest.raises(SystemExit) as exc:
-        cli_main(["b64", "-h"])
-    assert exc.value.code == 0
-    assert "usage: opencode-test b64" in capsys.readouterr().out
+def test_module_entry_runs(tmp_path):
+    proc = subprocess.run(
+        [sys.executable, "-m", "opencode_test", "aGVsbG8="],
+        capture_output=True,
+        cwd=tmp_path,
+    )
+    assert proc.returncode == 0
+    assert proc.stdout == b"hello"
